@@ -1,15 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useQuizStore } from "@/store/quizStore"
 
 export default function HistoryPage() {
   const router = useRouter()
-  const { history, resetQuiz, setConfig, setQuestions } = useQuizStore()
+  const { history, resetQuiz, setConfig, setQuestions, loadHistory, isSyncing } =
+    useQuizStore()
 
   const [sortBy, setSortBy] = useState<"date" | "score">("date")
   const [filterDifficulty, setFilterDifficulty] = useState<"All" | "Easy" | "Medium" | "Hard">("All")
+
+  useEffect(() => {
+    loadHistory()
+  }, [])
 
   const filtered = history
     .filter((a) =>
@@ -23,19 +28,19 @@ export default function HistoryPage() {
     })
 
   const handleRetake = (attemptId: string) => {
-  const attempt = history.find((a) => a.id === attemptId)
-  if (!attempt) return
-  resetQuiz()
-  setConfig({
-    topic: attempt.topic,
-    difficulty: attempt.difficulty,
-    questionCount: attempt.total,
-    timerEnabled: attempt.timerEnabled,
-    timerSeconds: attempt.timerSeconds,
-  })
-  setQuestions(attempt.questions)
-  router.push("/quiz")
-}
+    const attempt = history.find((a) => a.id === attemptId)
+    if (!attempt) return
+    resetQuiz()
+    setConfig({
+      topic: attempt.topic,
+      difficulty: attempt.difficulty,
+      questionCount: attempt.total,
+      timerEnabled: attempt.timerEnabled,
+      timerSeconds: attempt.timerSeconds,
+    })
+    setQuestions(attempt.questions)
+    router.push("/quiz")
+  }
 
   const getScoreColor = (score: number, total: number) => {
     const pct = (score / total) * 100
@@ -57,11 +62,15 @@ export default function HistoryPage() {
             ← Back
           </button>
           <h1 className="text-2xl font-bold text-white">Quiz History</h1>
+          {isSyncing && (
+            <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-lg">
+              Syncing...
+            </span>
+          )}
         </div>
 
         {/* Filters */}
         <div className="bg-gray-900 rounded-2xl p-4 mb-4 flex flex-col gap-3">
-          {/* Sort */}
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-400 w-16">Sort by</span>
             <div className="flex gap-2">
@@ -81,7 +90,6 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          {/* Filter */}
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-400 w-16">Difficulty</span>
             <div className="flex gap-2">
@@ -102,8 +110,33 @@ export default function HistoryPage() {
           </div>
         </div>
 
+        {/* Syncing Skeleton */}
+        {isSyncing && history.length === 0 && (
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-gray-900 rounded-2xl p-4 animate-pulse"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <div className="h-4 w-32 bg-gray-800 rounded mb-2" />
+                    <div className="h-3 w-20 bg-gray-800 rounded" />
+                  </div>
+                  <div className="h-8 w-12 bg-gray-800 rounded" />
+                </div>
+                <div className="flex gap-2">
+                  <div className="h-6 w-16 bg-gray-800 rounded" />
+                  <div className="h-6 w-20 bg-gray-800 rounded" />
+                  <div className="h-6 w-14 bg-gray-800 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Empty State */}
-        {filtered.length === 0 && (
+        {!isSyncing && filtered.length === 0 && (
           <div className="text-center py-16">
             <p className="text-gray-500 text-lg mb-2">No quizzes yet</p>
             <p className="text-gray-600 text-sm mb-6">
@@ -133,11 +166,7 @@ export default function HistoryPage() {
             const seconds = attempt.timeTaken % 60
 
             return (
-              <div
-                key={attempt.id}
-                className="bg-gray-900 rounded-2xl p-4"
-              >
-                {/* Top Row */}
+              <div key={attempt.id} className="bg-gray-900 rounded-2xl p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h3 className="text-white font-semibold capitalize">
@@ -155,7 +184,6 @@ export default function HistoryPage() {
                   </span>
                 </div>
 
-                {/* Stats Row */}
                 <div className="flex gap-2 mb-3">
                   <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-lg">
                     {attempt.difficulty}
@@ -168,7 +196,6 @@ export default function HistoryPage() {
                   </span>
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleRetake(attempt.id)}

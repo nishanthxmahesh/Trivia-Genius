@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useQuizStore } from "@/store/quizStore"
 
@@ -20,6 +20,27 @@ export default function Home() {
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium")
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [timerMinutes, setTimerMinutes] = useState("10")
+  const [isOnline, setIsOnline] = useState(true)
+  const [lastConfig, setLastConfig] = useState<{
+    topic: string
+    questionCount: number
+    difficulty: "Easy" | "Medium" | "Hard"
+    timerEnabled: boolean
+    timerMinutes: string
+  } | null>(null)
+
+  // Network check
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [])
 
   const handleTimerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -30,12 +51,23 @@ export default function Home() {
     }
   }
 
-  const handleSubmit = async () => {
-    if (!topic.trim()) {
+  const handleSubmit = async (overrideConfig?: typeof lastConfig) => {
+    if (!isOnline) {
+      setError("You are offline. Please check your internet connection.")
+      return
+    }
+
+    const currentTopic = overrideConfig?.topic ?? topic
+    const currentCount = overrideConfig?.questionCount ?? questionCount
+    const currentDifficulty = overrideConfig?.difficulty ?? difficulty
+    const currentTimerEnabled = overrideConfig?.timerEnabled ?? timerEnabled
+    const currentTimerMinutes = overrideConfig?.timerMinutes ?? timerMinutes
+
+    if (!currentTopic.trim()) {
       setError("Please enter a topic")
       return
     }
-    if (timerEnabled && (!parseInt(timerMinutes) || parseInt(timerMinutes) < 1)) {
+    if (currentTimerEnabled && (!parseInt(currentTimerMinutes) || parseInt(currentTimerMinutes) < 1)) {
       setError("Please enter a valid timer duration")
       return
     }
@@ -44,12 +76,21 @@ export default function Home() {
     setLoading(true)
 
     const config = {
-      topic,
-      questionCount,
-      difficulty,
-      timerEnabled,
-      timerSeconds: timerEnabled ? parseInt(timerMinutes) * 60 : null,
+      topic: currentTopic,
+      questionCount: currentCount,
+      difficulty: currentDifficulty,
+      timerEnabled: currentTimerEnabled,
+      timerSeconds: currentTimerEnabled ? parseInt(currentTimerMinutes) * 60 : null,
     }
+
+    setLastConfig({
+      topic: currentTopic,
+      questionCount: currentCount,
+      difficulty: currentDifficulty,
+      timerEnabled: currentTimerEnabled,
+      timerMinutes: currentTimerMinutes,
+    })
+
     setConfig(config)
 
     try {
@@ -68,9 +109,13 @@ export default function Home() {
       setQuestions(data.questions)
       router.push("/quiz")
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Something went wrong. Try again."
-      )
+      if (!navigator.onLine) {
+        setError("You are offline. Please check your internet connection.")
+      } else {
+        setError(
+          err instanceof Error ? err.message : "Something went wrong. Try again."
+        )
+      }
     } finally {
       setLoading(false)
     }
@@ -85,6 +130,14 @@ export default function Home() {
           <h1 className="text-4xl font-bold text-white mb-2">Quiz App</h1>
           <p className="text-gray-400">Generate a quiz on any topic using AI</p>
         </div>
+
+        {/* Offline Warning */}
+        {!isOnline && (
+          <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
+            <span>⚠️</span>
+            <span>You are offline. Please check your internet connection.</span>
+          </div>
+        )}
 
         {/* Form Card */}
         <div className="bg-gray-900 rounded-2xl p-6 flex flex-col gap-5">
@@ -102,7 +155,6 @@ export default function Home() {
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               className="bg-gray-800 text-white placeholder-gray-500 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {/* Topic Suggestions */}
             <div className="flex flex-wrap gap-2 mt-1">
               {TOPIC_SUGGESTIONS.map((suggestion) => (
                 <button
@@ -184,8 +236,6 @@ export default function Home() {
                 />
               </button>
             </div>
-
-            {/* Timer Duration Input */}
             {timerEnabled && (
               <div className="flex items-center gap-3 bg-gray-800 rounded-xl px-4 py-3">
                 <input
@@ -204,14 +254,23 @@ export default function Home() {
           {/* Error */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3">
-              {error}
+              <p className="mb-2">{error}</p>
+              {/* Retry button */}
+              {lastConfig && (
+                <button
+                  onClick={() => handleSubmit(lastConfig)}
+                  className="text-xs bg-red-500/20 hover:bg-red-500/30 text-red-300 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  🔄 Retry
+                </button>
+              )}
             </div>
           )}
 
           {/* Submit */}
           <button
-            onClick={handleSubmit}
-            disabled={isLoading}
+            onClick={() => handleSubmit()}
+            disabled={isLoading || !isOnline}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-colors"
           >
             {isLoading ? "Generating Quiz..." : "Generate Quiz"}

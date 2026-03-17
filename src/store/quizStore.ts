@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import { Question, QuizAttempt, QuizConfig } from "@/types/quiz"
+import { supabase } from "@/lib/supabase"
 
 type QuizStore = {
   config: QuizConfig | null
@@ -14,6 +15,7 @@ type QuizStore = {
   error: string | null
   history: QuizAttempt[]
   isQuizActive: boolean
+  isSyncing: boolean
 
   setConfig: (config: QuizConfig) => void
   setQuestions: (questions: Question[]) => void
@@ -24,6 +26,7 @@ type QuizStore = {
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   saveAttempt: (attempt: QuizAttempt) => void
+  loadHistory: () => Promise<void>
   recordQuestionTime: (questionId: string) => void
   resetQuiz: () => void
 }
@@ -42,6 +45,7 @@ export const useQuizStore = create<QuizStore>()(
       error: null,
       history: [],
       isQuizActive: false,
+      isSyncing: false,
 
       setConfig: (config) => set({ config }),
       setQuestions: (questions) =>
@@ -92,8 +96,70 @@ export const useQuizStore = create<QuizStore>()(
       },
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
-      saveAttempt: (attempt) =>
-        set((state) => ({ history: [attempt, ...state.history] })),
+
+      saveAttempt: async (attempt) => {
+        // Save to local state immediately
+        set((state) => ({ history: [attempt, ...state.history] }))
+
+        // Save to Supabase in background
+        try {
+          const { error } = await supabase.from("quiz_attempts").insert({
+            id: attempt.id,
+            topic: attempt.topic,
+            difficulty: attempt.difficulty,
+            score: attempt.score,
+            total: attempt.total,
+            time_taken: attempt.timeTaken,
+            date: attempt.date,
+            questions: attempt.questions,
+            user_answers: attempt.userAnswers,
+            question_timings: attempt.questionTimings,
+            timer_enabled: attempt.timerEnabled,
+            timer_seconds: attempt.timerSeconds,
+          })
+          if (error) console.error("Supabase save error:", error)
+        } catch (err) {
+          console.error("Failed to save to Supabase:", err)
+        }
+      },
+
+      loadHistory: async () => {
+        set({ isSyncing: true })
+        try {
+          const { data, error } = await supabase
+            .from("quiz_attempts")
+            .select("*")
+            .order("created_at", { ascending: false })
+
+          if (error) {
+            console.error("Supabase load error:", error)
+            return
+          }
+
+          if (data) {
+            const attempts: QuizAttempt[] = data.map((row) => ({
+              id: row.id,
+              topic: row.topic,
+              difficulty: row.difficulty,
+              score: row.score,
+              total: row.total,
+              timeTaken: row.time_taken,
+              date: row.date,
+              questions: row.questions,
+              userAnswers: row.user_answers,
+              questionTimings: row.question_timings,
+              timerEnabled: row.timer_enabled,
+              timerSeconds: row.timer_seconds,
+            }))
+            set({ history: attempts })
+          }
+        } catch (err) {
+          console.error("Failed to load from Supabase:", err)
+        } finally {
+          set({ isSyncing: false })
+        }
+      },
+
       resetQuiz: () =>
         set({
           config: null,
@@ -109,7 +175,17 @@ export const useQuizStore = create<QuizStore>()(
     }),
     {
       name: "quiz-storage",
-      partialize: (state) => ({ history: state.history }),
+      partialize: (state) => ({
+        history: state.history,
+        questions: state.questions,
+        currentIndex: state.currentIndex,
+        userAnswers: state.userAnswers,
+        questionTimings: state.questionTimings,
+        startTime: state.startTime,
+        questionStartTime: state.questionStartTime,
+        config: state.config,
+        isQuizActive: state.isQuizActive,
+      }),
     }
   )
 )
