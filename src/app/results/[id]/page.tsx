@@ -375,7 +375,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* Submit */}
+          {/*  to Submit */}
           <button
             onClick={() => handleSubmit()}
             disabled={isLoading || !isOnline}
