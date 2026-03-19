@@ -33,35 +33,33 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    label: "Leaderboard",
+    href: "/leaderboard",
+    icon: (
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+    ),
+  },
 ]
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const { questions } = useQuizStore()
-
-  const isQuizActive = questions.length > 0
+  const { isQuizActive } = useQuizStore()
 
   return (
     <>
-      {/* Overlay when open on mobile */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20"
-          onClick={() => setIsOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-20" onClick={() => setIsOpen(false)} />
       )}
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-0 left-0 h-full bg-gray-900 border-r border-gray-800 z-30 flex flex-col transition-all duration-300 ${
-          isOpen ? "w-56" : "w-16"
-        }`}
-      >
-        {/* Toggle Button */}
+      <aside className={`fixed top-0 left-0 h-full bg-gray-900 border-r border-gray-800 z-30 flex flex-col transition-all duration-300 ${isOpen ? "w-56" : "w-16"}`}>
+
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-center h-16 w-full hover:bg-gray-800 transition-colors border-b border-gray-800"
+          className="flex items-center justify-center h-16 w-full hover:bg-gray-800 transition-colors border-b border-gray-800 text-gray-400"
         >
           {isOpen ? (
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -74,7 +72,6 @@ export default function Navbar() {
           )}
         </button>
 
-        {/* Nav Items */}
         <nav className="flex flex-col gap-1 p-2 flex-1">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href
@@ -91,15 +88,12 @@ export default function Navbar() {
               >
                 <span className="shrink-0">{item.icon}</span>
                 {isOpen && (
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {item.label}
-                  </span>
+                  <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
                 )}
               </Link>
             )
           })}
 
-          {/* Resume Quiz */}
           {isQuizActive && (
             <Link
               href="/quiz"
@@ -117,15 +111,12 @@ export default function Navbar() {
                 </svg>
               </span>
               {isOpen && (
-                <span className="text-sm font-medium whitespace-nowrap">
-                  Resume Quiz
-                </span>
+                <span className="text-sm font-medium whitespace-nowrap">Resume Quiz</span>
               )}
             </Link>
           )}
         </nav>
 
-        {/* Bottom App Name */}
         {isOpen && (
           <div className="p-4 border-t border-gray-800">
             <p className="text-xs text-gray-600 text-center">Quiz App v1.0</p>
@@ -133,7 +124,6 @@ export default function Navbar() {
         )}
       </aside>
 
-      {/* Spacer so content doesn't hide behind sidebar */}
       <div className="w-16 shrink-0" />
     </>
   )

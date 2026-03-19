@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import { Question, QuizAttempt, QuizConfig } from "@/types/quiz"
+import { Question, QuizAttempt, QuizConfig, QuestionHintInfo, QuestionType } from "@/types/quiz"
 import { supabase } from "@/lib/supabase"
 
 type QuizStore = {
@@ -9,6 +9,7 @@ type QuizStore = {
   currentIndex: number
   userAnswers: Record<string, string>
   questionTimings: Record<string, number>
+  questionHints: Record<string, QuestionHintInfo>
   startTime: number | null
   questionStartTime: number | null
   isLoading: boolean
@@ -28,6 +29,7 @@ type QuizStore = {
   saveAttempt: (attempt: QuizAttempt) => void
   loadHistory: () => Promise<void>
   recordQuestionTime: (questionId: string) => void
+  addHint: (questionId: string, hint: string) => void
   resetQuiz: () => void
 }
 
@@ -39,6 +41,7 @@ export const useQuizStore = create<QuizStore>()(
       currentIndex: 0,
       userAnswers: {},
       questionTimings: {},
+      questionHints: {},
       startTime: null,
       questionStartTime: null,
       isLoading: false,
@@ -54,20 +57,42 @@ export const useQuizStore = create<QuizStore>()(
           currentIndex: 0,
           userAnswers: {},
           questionTimings: {},
+          questionHints: {},
           startTime: Date.now(),
           questionStartTime: Date.now(),
           isQuizActive: true,
         }),
       answerQuestion: (questionId, answer) =>
-        set((state) => ({
-          userAnswers: { ...state.userAnswers, [questionId]: answer },
-        })),
+        set((state) => {
+          if (answer === "") {
+            const updated = { ...state.userAnswers }
+            delete updated[questionId]
+            return { userAnswers: updated }
+          }
+          return { userAnswers: { ...state.userAnswers, [questionId]: answer } }
+        }),
+      addHint: (questionId, hint) =>
+        set((state) => {
+          const existing = state.questionHints[questionId] || {
+            hintsUsed: 0, hints: [], penaltyPercent: 0,
+          }
+          const newHintsUsed = existing.hintsUsed + 1
+          const penaltyPercent = newHintsUsed === 1 ? 25 : newHintsUsed === 2 ? 50 : 75
+          return {
+            questionHints: {
+              ...state.questionHints,
+              [questionId]: {
+                hintsUsed: newHintsUsed,
+                hints: [...existing.hints, hint],
+                penaltyPercent,
+              },
+            },
+          }
+        }),
       recordQuestionTime: (questionId) => {
         const state = get()
         if (!state.questionStartTime) return
-        const elapsed = Math.floor(
-          (Date.now() - state.questionStartTime) / 1000
-        )
+        const elapsed = Math.floor((Date.now() - state.questionStartTime) / 1000)
         set((s) => ({
           questionTimings: {
             ...s.questionTimings,
@@ -96,14 +121,10 @@ export const useQuizStore = create<QuizStore>()(
       },
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
-
       saveAttempt: async (attempt) => {
-        // Save to local state immediately
         set((state) => ({ history: [attempt, ...state.history] }))
-
-        // Save to Supabase in background
         try {
-          const { error } = await supabase.from("quiz_attempts").insert({
+          await supabase.from("quiz_attempts").insert({
             id: attempt.id,
             topic: attempt.topic,
             difficulty: attempt.difficulty,
@@ -116,13 +137,33 @@ export const useQuizStore = create<QuizStore>()(
             question_timings: attempt.questionTimings,
             timer_enabled: attempt.timerEnabled,
             timer_seconds: attempt.timerSeconds,
+            total_marks: attempt.totalMarks,
+            earned_marks: attempt.earnedMarks,
+            question_hints: attempt.questionHints,
+            hints_enabled: attempt.hintsEnabled,
+            ai_chat_enabled: attempt.aiChatEnabled,
+            username: attempt.username,
+            question_types: attempt.questionTypes,
           })
-          if (error) console.error("Supabase save error:", error)
+
+          // Save to leaderboard
+          await supabase.from("leaderboard").insert({
+            id: attempt.id,
+            username: attempt.username,
+            topic: attempt.topic,
+            difficulty: attempt.difficulty,
+            score: attempt.score,
+            total: attempt.total,
+            earned_marks: attempt.earnedMarks,
+            total_marks: attempt.totalMarks,
+            percentage: Math.round((attempt.score / attempt.total) * 100),
+            time_taken: attempt.timeTaken,
+            date: attempt.date,
+          })
         } catch (err) {
-          console.error("Failed to save to Supabase:", err)
+          console.error("Failed to save:", err)
         }
       },
-
       loadHistory: async () => {
         set({ isSyncing: true })
         try {
@@ -130,12 +171,7 @@ export const useQuizStore = create<QuizStore>()(
             .from("quiz_attempts")
             .select("*")
             .order("created_at", { ascending: false })
-
-          if (error) {
-            console.error("Supabase load error:", error)
-            return
-          }
-
+          if (error) { console.error("Supabase load error:", error); return }
           if (data) {
             const attempts: QuizAttempt[] = data.map((row) => ({
               id: row.id,
@@ -150,16 +186,22 @@ export const useQuizStore = create<QuizStore>()(
               questionTimings: row.question_timings,
               timerEnabled: row.timer_enabled,
               timerSeconds: row.timer_seconds,
+              totalMarks: row.total_marks || 100,
+              earnedMarks: row.earned_marks || row.score,
+              questionHints: row.question_hints || {},
+              hintsEnabled: row.hints_enabled || false,
+              aiChatEnabled: row.ai_chat_enabled || false,
+              username: row.username || "Anonymous",
+              questionTypes: row.question_types || ["mcq"],
             }))
             set({ history: attempts })
           }
         } catch (err) {
-          console.error("Failed to load from Supabase:", err)
+          console.error("Failed to load:", err)
         } finally {
           set({ isSyncing: false })
         }
       },
-
       resetQuiz: () =>
         set({
           config: null,
@@ -167,6 +209,7 @@ export const useQuizStore = create<QuizStore>()(
           currentIndex: 0,
           userAnswers: {},
           questionTimings: {},
+          questionHints: {},
           startTime: null,
           questionStartTime: null,
           error: null,
@@ -181,6 +224,7 @@ export const useQuizStore = create<QuizStore>()(
         currentIndex: state.currentIndex,
         userAnswers: state.userAnswers,
         questionTimings: state.questionTimings,
+        questionHints: state.questionHints,
         startTime: state.startTime,
         questionStartTime: state.questionStartTime,
         config: state.config,
