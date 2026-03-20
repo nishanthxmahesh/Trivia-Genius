@@ -171,14 +171,14 @@ Visit `http://localhost:3000` to start.
 <div flex gap-2>
   <img src="/public/screenshots/analytics-1.png" width="48%" />
   <img src="/public/screenshots/analytics-2.png" width="48%" />
+  <img src="/public/screenshots/history-1.png" width="48%" />
+  <img src="/public/screenshots/history-2.png" width="48%" />
 </div>
 
-### 5. Global Leaderboard & Stats
+### 5. Global Leaderboard
 *Synced with Supabase to track top performers worldwide.*
 <div flex gap-2>
   <img src="/public/screenshots/leaderboard.png" width="32%" />
-  <img src="/public/screenshots/history-1.png" width="32%" />
-  <img src="/public/screenshots/history-2.png" width="32%" />
 </div>
 
 ---
