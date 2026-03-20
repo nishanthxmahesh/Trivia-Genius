@@ -1,117 +1,92 @@
-# AI Learning Assistant Features
+# Trivia Genius Features & Implementation Log
 
-## ✅ All Requested Features Implemented
+A comprehensive list of all mandatory and bonus features implemented for the Frontend Developer assignment.
 
-### 1. **Chat Interface for Quiz-Related Help**
-- **Location**: Bottom-right corner of the quiz page (floating chat button)
-- **Features**:
-  - Real-time chat with AI assistant while taking the quiz
-  - Context-aware responses based on the current quiz topic and question
-  - Question-specific help suggestions when answering a question
-  - Topic-specific tips and explanations
-  - Previous messages saved during the quiz session
+---
 
-### 2. **Get Hints During Quiz (with Score Penalty)**
-- **Location**: Quiz page, next to question text
-- **Features**:
-  - Up to 3 hints available per question
-  - Automatic score penalties:
-    - Hint 1: -25% penalty
-    - Hint 2: -50% penalty  
-    - Hint 3: -75% penalty
-  - Visual indicators showing hint levels used
-  - Penalty clearly displayed on results screen
-  - Marks breakdown showing original and penalty-adjusted scores
+## 1. Core Learning Engine (Mandatory)
 
-### 3. **Detailed Explanations for Answers**
-- **Location**: Below answer options after submitting a question
-- **Features**:
-  - Toggle-able explanation button ("📖 Explain this answer")
-  - Powered by AI to explain why the answer is correct/incorrect
-  - Shows correct answer vs user's answer
-  - Available on quiz results page
-  - Pull-down for efficient learning
+- **AI-Powered Question Generation**:
+  - Integrated with **Groq SDK (Llama 3.3 70B)** for ultra-fast and factually accurate trivia.
+  - Generates multiple choice, true/false, fill-in-the-blank, and multi-select questions.
+  - Supports **Free-Text Topic Selection** (any subject in the world).
+  - Customizable difficulty (Easy, Medium, Hard).
+  - Variable question counts (5, 10, 15, or 20 questions).
 
-### 4. **Ask Follow-up Questions About Topics**
-- **Location**: AI Chat interface
-- **Features**:
-  - Question-specific suggestions:
-    - "Explain the concept in this question"
-    - "What does this question mean?"
-    - "Help me understand the answer"
-  - Topic-specific suggestions:
-    - "Explain {topic} basics"
-    - "What should I know about {topic}?"
-    - "Give me tips for this quiz"
-  - Free-form question capability
-  - Conversation history maintained during quiz session
-  - AI assistant has full context of quiz difficulty and topic
+- **Dynamic Quiz Interface**:
+  - **Single-Question Focus**: Distraction-free card layout.
+  - **Real-Time Progress**: Interactive progress bar and question numbering.
+  - **Auto-Persistence**: Integrated **Zustand middleware** saves current state to local storage. If page refreshes, users resume exactly where they left off.
+  - **Navigation Controls**: Smooth "Previous" and "Next" controls with instant state updates.
 
-## 💡 How to Use
+- **Results & Performance Breakdown**:
+  - Comprehensive results dashboard.
+  - Total Score, Earned Marks, and Time Taken.
+  - Question-by-question review with **Color-Coded Status** (Correct, Partial, Wrong).
 
-### Starting a Quiz
-1. Click "New Quiz" on the home page
-2. Select topic, difficulty, and number of questions
-3. Begin the quiz
+- **Persistence & History**:
+  - **History Dashboard**: Filterable and sortable log of every quiz taken.
+  - **Cloud Sync**: All attempts are saved to **Supabase PostgreSQL** for multi-device access.
 
-### While Taking the Quiz
+---
 
-**Get Help**:
-- Click the **blue chat button** (bottom-right) to open AI Chat
-- Ask questions about the topic or current question
-- Use suggested prompts or type your own question
+## 2. Advanced Features (Bonus & Enhanced)
 
-**Get a Hint**:
-1. Click the **"💡 Hint N"** button next to the question
-2. Understand the concept better
-3. Note that your score will be reduced if you get the answer correct
+- **AI Weak Area Analysis**: 
+  - An exclusive feature that takes all your "Wrong" answers and uses AI to identify the specific sub-topics you need to practice.
+  - Provides a bulleted summary of learning recommendations.
 
-**Review Earlier**:
-- Click **"Explain this answer"** to understand the concept
-- Works best after submitting your answer
+- **Points-Deduction AI Hints**:
+  - Get up to 3 AI hints per question.
+  - Uses a **Penalty System**: 1st hint (-25% marks), 2nd hint (-50%), 3rd hint (-75%).
+  - Prevents "cheating" while still helping users through tough topics.
 
-### After Submitting Quiz
-- Review all answers with explanations
-- See detailed marks breakdown including penalties
-- Retake the quiz to improve your score
+- **Global Leaderboard**:
+  - Real-time global ranking based on Percentage Score and Time Taken.
+  - Top performers are displayed with Gold, Silver, and Bronze medals.
 
-## 🛠 Technical Implementation
+- **PDF Export & Reports**: 
+  - Export your results directly to a clean PDF for sharing or documentation.
+  - Built using `jsPDF` and `html-to-image`.
 
-### Files Modified
-- `src/app/quiz/page.tsx` - Added AIChat component integration
-- `src/components/AIChat.tsx` - Enhanced with current question context
-- `src/app/history/page.tsx` - Fixed totalMarks property
-- `src/app/results/[id]/page.tsx` - Fixed totalMarks property
+- **Rules Configuration**:
+  - **Negative Marking**: Configurable penalty for wrong answers (e.g., -0.25 marks).
+  - **Strict Mode**: Optional setting requiring all questions be answered before submission.
+  - **Min Time Limit**: Prevents accidental/early submissions.
 
-### API Routes Used
-- `/api/chat` - Handles AI chat conversations
-- `/api/hint` - Generates leveled hints
-- `/api/explain` - Generates answer explanations
-- `/api/generate` - Generates quiz questions
+---
 
-### UI/UX Features
-- Responsive design with mobile navigation
-- Sticky position for AI chat (doesn't interfere with quiz)
-- Real-time loading indicators
-- Color-coded status indicators
-- Progress tracking and question navigator
-- Time tracking (if timer enabled)
+## 3. UI/UX & Design Excellence
 
-## 📊 Scoring System
+- **Responsive Bottom Navigation**: 
+  - Custom sidebar for desktops.
+  - Floating, thumb-friendly **Bottom Bar** for mobile devices.
+- **Micro-Animations**: Uses **Framer Motion** for layout transitions, pinging indicators, and card drifts.
+- **Glassmorphism Aesthetic**: Dark-mode-first UI with semi-transparent blurs and radial glow backgrounds.
+- **Animated Background**: A globally synchronized, moving color-gradient background that covers the full screen on all pages.
 
-- **Full Marks**: All questions without hints
-- **With Hints**: Marks reduced based on hint levels used
-- **Example**: If a question is 2 marks and you use 2 hints:
-  - Full marks: 2
-  - With hint 1 (-25%): 1.5
-  - With hint 2 (-50%): 1.0
-  - Final deduction shown on results
+---
 
-## 🚀 Future Enhancements (Optional)
+## 4. Performance & Technical Optimization
 
-- Save chat conversations for future reference
-- AI-powered quiz generation based on difficulty
-- Custom question validation
-- Performance analytics and recommendations
-- Study recommendations based on weak topics
-- Peer comparison (if needed)
+- **PWA Capabilities**: 
+  - Fully installable as a web app on iOS/Android.
+  - Manifest and Service Worker support for offline caching.
+- **Caching**: AI responses are cached locally to prevent repeated costs and latency.
+- **Strict TypeScript**: 100% type coverage across the project (v4+). No usage of `any`.
+- **Atomic Components**: Highly modular structure following the "Parts" pattern.
+
+---
+
+## 5. Possible Future Enhancements
+
+- **Real-Time Multiplayer Mode**: Use **Socket.io** or Supabase Broadcast to allow users to compete live in the same quiz room.
+- **Multi-Modal AI Questions**: Integration with **GPT-4o or Llama Vision** to generate questions based on uploaded images or screenshots.
+- **Voice-Enabled Quizzes**: Use the **Web Speech API** or ElevenLabs to have the AI read questions aloud and accept voice-based answers for accessibility.
+- **Collaborative Study Groups**: Allow users to share specific AI-generated "Quiz Sets" via unique links or QR codes.
+- **Advanced Gamification**: Profile customization with avatars, unlockable themes, and achievement badges for daily streaks.
+- **Rich Media Support**: Allow the AI to integrate relevant YouTube clips or audio snippets directly into questions for deeper learning.
+
+---
+
+Developed by M.Nishanth for the Frontend Developer Assignment.
