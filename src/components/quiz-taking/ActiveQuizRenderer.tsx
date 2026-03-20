@@ -254,6 +254,17 @@ export function ActiveQuizRenderer({ setCompletedAttempt }: { setCompletedAttemp
           )}
         </div>
 
+        <div className="md:hidden mt-12 mb-8">
+          <QuestionNavigator 
+            questions={questions}
+            currentIndex={currentIndex}
+            markedQuestions={markedQuestions}
+            visitedQuestions={visitedQuestions}
+            handleFinish={handlePreSubmit}
+            handleQuit={handleQuit}
+            isSubmitDisabled={isSubmitDisabled}
+          />
+        </div>
       </div>
       
       <div className="hidden md:block md:w-72 lg:w-80 shrink-0 sticky top-12 h-[calc(100vh-6rem)]">
