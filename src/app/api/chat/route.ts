@@ -1,43 +1,41 @@
-import Groq from "groq-sdk"
 import { NextResponse } from "next/server"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json()
-    const { messages, topic, context } = body
+    const { messages, topic } = await req.json()
 
     if (!messages || !Array.isArray(messages)) {
-      return NextResponse.json({ error: "Missing messages" }, { status: 400 })
+      return NextResponse.json({ error: "Invalid messages array" }, { status: 400 })
     }
 
-    const systemPrompt = topic
-      ? `You are a helpful AI learning assistant for a quiz app. The user just completed a quiz about "${topic}". ${context || ""} Help them understand concepts, explain wrong answers, and answer questions about the topic. Be concise, clear and educational.`
-      : `You are a helpful AI learning assistant for a quiz app. Help users understand quiz topics and explain concepts clearly.`
-
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages.map((m: { role: string; content: string }) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert, supportive AI Tutor helping a student deep dive into questions and general knowledge loosely around the topic "${topic}". Answer any questions they have, explain concepts clearly, and guide them. Keep it brief and well-formatted.`
+          },
+          ...messages
+        ],
+        temperature: 0.6,
+      }),
     })
 
-    const reply = completion.choices[0]?.message?.content
-    if (!reply) throw new Error("No reply from Groq")
+    const data = await res.json()
 
-    return NextResponse.json({ reply })
-  } catch (error) {
-    console.error("Chat API error:", error)
-    return NextResponse.json(
-      { error: "Failed to get response. Please try again." },
-      { status: 500 }
-    )
+    if (!res.ok) {
+      throw new Error(data.error?.message || "Failed to contact Groq API")
+    }
+
+    return NextResponse.json({ message: data.choices[0].message.content })
+  } catch (err: any) {
+    console.error("Chat API error:", err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

@@ -1,4 +1,4 @@
-export type QuestionType = "mcq" | "truefalse" | "fillintheblank"
+export type QuestionType = "mcq" | "truefalse" | "fillintheblank" | "multiselect"
 
 export type Question = {
   id: string
@@ -35,6 +35,9 @@ export type QuizAttempt = {
   aiChatEnabled: boolean
   username: string
   questionTypes: QuestionType[]
+  requireAllAnswers: boolean
+  minTimeLimit: number | null
+  negativeMarking: number
 }
 
 export type QuizConfig = {
@@ -48,6 +51,9 @@ export type QuizConfig = {
   aiChatEnabled: boolean
   username: string
   questionTypes: QuestionType[]
+  requireAllAnswers: boolean
+  minTimeLimit: number | null
+  negativeMarking: number
 }
 
 export type ChatMessage = {

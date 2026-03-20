@@ -46,7 +46,8 @@ export async function POST(request: Request) {
     const typeInstructions = types.map((t) => {
       if (t === "mcq") return `Multiple choice questions with exactly 4 options`
       if (t === "truefalse") return `True/False questions with options ["True", "False"]`
-      if (t === "fillintheblank") return `Fill in the blank questions — the question has a blank (___) and the correct answer fills it. Options should be 4 possible words/phrases.`
+      if (t === "fillintheblank") return `Fill in the blank questions — the question has a blank (___) and the correct answer fills it. The question MUST end with either "(Numerical)" or "(Text)" to indicate the expected answer type. Options should be 4 possible words/phrases.`
+      if (t === "multiselect") return `Multiple correct answers. Must have exactly 4 options, and between 1 and 4 of those options can be correct. The correctAnswer field MUST be a JSON serialized array of strings, e.g., '["Option A", "Option C"]'.`
       return ""
     }).join(", ")
 
@@ -54,14 +55,15 @@ export async function POST(request: Request) {
       if (t === "mcq") return `{"id": "1", "type": "mcq", "text": "Question?", "options": ["A", "B", "C", "D"], "correctAnswer": "A"}`
       if (t === "truefalse") return `{"id": "2", "type": "truefalse", "text": "Statement is true?", "options": ["True", "False"], "correctAnswer": "True"}`
       if (t === "fillintheblank") return `{"id": "3", "type": "fillintheblank", "text": "The capital of France is ___.", "options": ["Paris", "London", "Berlin", "Rome"], "correctAnswer": "Paris"}`
+      if (t === "multiselect") return `{"id": "4", "type": "multiselect", "text": "Which of these are fruits?", "options": ["Apple", "Carrot", "Banana", "Onion"], "correctAnswer": "[\\"Apple\\", \\"Banana\\"]"}`
       return ""
     }).join(",\n")
 
     const rules = [
-      "- correctAnswer must be exactly one of the options",
       types.includes("fillintheblank") ? "- For fill in the blank, use ___ in the question text. Even if it's a fill in the blank, provide 4 options so the correct answer is among them." : "",
       types.includes("truefalse") ? "- For true/false, options must be exactly [\"True\", \"False\"]" : "",
-      types.includes("mcq") ? "- For MCQ, exactly 4 options" : "",
+      types.includes("mcq") ? "- For MCQ, exactly 4 options, 1 correct answer" : "",
+      types.includes("multiselect") ? "- For multiselect, exactly 4 options, correctAnswer MUST be a stringified JSON array of the correct choices" : "",
       `- Questions should match ${difficulty} difficulty`,
       "- Make questions clear and unambiguous",
       types.length > 1 ? "- Distribute question types evenly" : `- ALL questions MUST be of type "${types[0]}"`
@@ -96,7 +98,8 @@ ${rules}`
 
     const validQuestions = questions.filter(
       (q) => q.id && q.text && q.type && Array.isArray(q.options) &&
-        q.options.length >= 2 && q.correctAnswer && q.options.includes(q.correctAnswer) &&
+        q.options.length >= 2 && q.correctAnswer && 
+        (q.type === "multiselect" ? (() => { try { JSON.parse(q.correctAnswer); return true } catch(e){return false} })() : q.options.includes(q.correctAnswer)) &&
         types.includes(q.type)
     )
 
@@ -107,10 +110,8 @@ ${rules}`
     return NextResponse.json({ questions: validQuestions })
   } catch (error: unknown) {
     console.error("API error:", error)
-    if (error instanceof Error) {
-      if (error.message.includes("rate limit") || error.message.includes("429")) {
-        return NextResponse.json({ error: "AI service is busy. Please wait and try again." }, { status: 429 })
-      }
+    if (error instanceof Error && (error.message.includes("rate limit") || error.message.includes("429"))) {
+      return NextResponse.json({ error: "AI service is busy. Please wait and try again." }, { status: 429 })
     }
     return NextResponse.json({ error: "Failed to generate questions. Please try again." }, { status: 500 })
   }

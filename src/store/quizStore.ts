@@ -17,6 +17,7 @@ type QuizStore = {
   history: QuizAttempt[]
   isQuizActive: boolean
   isSyncing: boolean
+  customTopics: string[]
 
   setConfig: (config: QuizConfig) => void
   setQuestions: (questions: Question[]) => void
@@ -31,6 +32,9 @@ type QuizStore = {
   recordQuestionTime: (questionId: string) => void
   addHint: (questionId: string, hint: string) => void
   resetQuiz: () => void
+  addCustomTopic: (topic: string) => void
+  deleteAttempt: (id: string) => Promise<void>
+  clearHistory: () => Promise<void>
 }
 
 export const useQuizStore = create<QuizStore>()(
@@ -49,6 +53,7 @@ export const useQuizStore = create<QuizStore>()(
       history: [],
       isQuizActive: false,
       isSyncing: false,
+      customTopics: [],
 
       setConfig: (config) => set({ config }),
       setQuestions: (questions) =>
@@ -144,6 +149,9 @@ export const useQuizStore = create<QuizStore>()(
             ai_chat_enabled: attempt.aiChatEnabled,
             username: attempt.username,
             question_types: attempt.questionTypes,
+            require_all_answers: attempt.requireAllAnswers,
+            min_time_limit: attempt.minTimeLimit,
+            negative_marking: attempt.negativeMarking
           })
 
           // Save to leaderboard
@@ -156,7 +164,7 @@ export const useQuizStore = create<QuizStore>()(
             total: attempt.total,
             earned_marks: attempt.earnedMarks,
             total_marks: attempt.totalMarks,
-            percentage: Math.round((attempt.score / attempt.total) * 100),
+            percentage: Math.max(0, Math.round((attempt.earnedMarks / attempt.totalMarks) * 100)),
             time_taken: attempt.timeTaken,
             date: attempt.date,
           })
@@ -193,6 +201,9 @@ export const useQuizStore = create<QuizStore>()(
               aiChatEnabled: row.ai_chat_enabled || false,
               username: row.username || "Anonymous",
               questionTypes: row.question_types || ["mcq"],
+              requireAllAnswers: row.require_all_answers || false,
+              minTimeLimit: row.min_time_limit || null,
+              negativeMarking: row.negative_marking || false,
             }))
             set({ history: attempts })
           }
@@ -215,6 +226,28 @@ export const useQuizStore = create<QuizStore>()(
           error: null,
           isQuizActive: false,
         }),
+      addCustomTopic: (topic) =>
+        set((state) => {
+          const t = topic.trim()
+          if (!t || state.customTopics.includes(t)) return {}
+          return { customTopics: [t, ...state.customTopics] }
+        }),
+      deleteAttempt: async (id) => {
+        set((state) => ({ history: state.history.filter((a) => a.id !== id) }))
+        try {
+          await supabase.from("quiz_attempts").delete().eq("id", id)
+          await supabase.from("leaderboard").delete().eq("id", id)
+        } catch (err) { console.error("Failed to delete local entry", err) }
+      },
+      clearHistory: async () => {
+        const state = get()
+        set({ history: [] })
+        try {
+          const ids = state.history.map(a => a.id)
+          await supabase.from("quiz_attempts").delete().in("id", ids)
+          await supabase.from("leaderboard").delete().in("id", ids)
+        } catch (err) { console.error("Failed to clear local entries", err) }
+      },
     }),
     {
       name: "quiz-storage",
@@ -229,6 +262,7 @@ export const useQuizStore = create<QuizStore>()(
         questionStartTime: state.questionStartTime,
         config: state.config,
         isQuizActive: state.isQuizActive,
+        customTopics: state.customTopics,
       }),
     }
   )

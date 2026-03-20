@@ -1,25 +1,19 @@
-"use client"
-
 import * as React from "react"
 import { motion } from "framer-motion"
-import { cn } from "@/lib/utils"
 
-interface ProgressBarProps extends React.HTMLAttributes<HTMLDivElement> {
-  progress: number // 0 to 100
-  colorClass?: string
+interface ProgressBarProps {
+  progress: number
+  className?: string
 }
 
-export function ProgressBar({ progress, colorClass = "bg-blue-500", className, ...props }: ProgressBarProps) {
+export function ProgressBar({ progress, className = "" }: ProgressBarProps) {
   return (
-    <div
-      className={cn("w-full overflow-hidden rounded-full bg-gray-800 h-2", className)}
-      {...props}
-    >
+    <div className={`w-full h-3 bg-[#111827] rounded-full overflow-hidden border border-white/5 shadow-inner ${className}`}>
       <motion.div
-        className={cn("h-full rounded-full", colorClass)}
+        className="h-full bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 rounded-full shadow-[0_0_10px_rgba(139,92,246,0.5)]"
         initial={{ width: 0 }}
-        animate={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
-        transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        animate={{ width: `${progress}%` }}
+        transition={{ duration: 0.8, ease: "easeInOut" }}
       />
     </div>
   )

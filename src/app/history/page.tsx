@@ -1,193 +1,106 @@
 "use client"
-
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useQuizStore } from "@/store/quizStore"
+import Link from "next/link"
+import { motion, AnimatePresence } from "framer-motion"
+import { Calendar, Clock, Target, ArrowRight, CheckCircle2, XCircle, Trash2, ShieldAlert } from "lucide-react"
 
 export default function HistoryPage() {
-  const router = useRouter()
-  const { history, resetQuiz, setConfig, setQuestions, loadHistory, isSyncing } = useQuizStore()
+  const { history, deleteAttempt, clearHistory } = useQuizStore()
 
-  const [sortBy, setSortBy] = useState<"date" | "score">("date")
-  const [filterDifficulty, setFilterDifficulty] = useState<"All" | "Easy" | "Medium" | "Hard">("All")
-
-  useEffect(() => { loadHistory() }, [])
-
-  const filtered = history
-    .filter((a) => filterDifficulty === "All" ? true : a.difficulty === filterDifficulty)
-    .sort((a, b) => {
-      if (sortBy === "date") return new Date(b.date).getTime() - new Date(a.date).getTime()
-      return b.score / b.total - a.score / a.total
-    })
-
-  const handleRetake = (attemptId: string) => {
-    const attempt = history.find((a) => a.id === attemptId)
-    if (!attempt) return
-    resetQuiz()
-    setConfig({
-      topic: attempt.topic,
-      difficulty: attempt.difficulty,
-      questionCount: attempt.total,
-      timerEnabled: attempt.timerEnabled,
-      timerSeconds: attempt.timerSeconds,
-      totalMarks: attempt.totalMarks || 100,
-      hintsEnabled: attempt.hintsEnabled || false,
-      aiChatEnabled: attempt.aiChatEnabled || false,
-      username: attempt.username || "Anonymous",
-      questionTypes: attempt.questionTypes || ["mcq"],
-    })
-    setQuestions(attempt.questions)
-    router.push("/quiz")
-  }
-
-  const getScoreColor = (score: number, total: number) => {
-    const pct = (score / total) * 100
-    if (pct >= 80) return "text-green-400"
-    if (pct >= 50) return "text-yellow-400"
-    return "text-red-400"
+  if (history.length === 0) {
+    return (
+      <main className="min-h-screen bg-[#0a0f1e] text-slate-300 p-8 flex flex-col items-center justify-center">
+        <h1 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight text-center">Your Quiz Journey</h1>
+        <div className="bg-[#111827] border border-white/10 p-12 rounded-3xl text-center max-w-lg shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+          <HistoryIcon className="w-16 h-16 text-slate-600 mx-auto mb-6" />
+          <h2 className="text-2xl font-bold text-white mb-2">No History Yet</h2>
+          <p className="text-slate-400 mb-8 font-medium">You haven't completed any quizzes. Take your first quiz to start tracking your performance!</p>
+          <Link href="/generate" className="inline-flex items-center justify-center px-8 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-[0_0_30px_rgba(59,130,246,0.3)]">
+            Start a Quiz Now
+          </Link>
+        </div>
+      </main>
+    )
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white p-4">
-      <div className="w-full max-w-xl mx-auto">
+    <main className="min-h-screen bg-[#0a0f1e] text-slate-300 p-4 md:p-12 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(59,130,246,0.15),transparent_40%)] pointer-events-none" />
 
-        <div className="flex items-center gap-3 mb-6">
-          <button
-            onClick={() => router.push("/")}
-            className="text-gray-400 hover:text-white transition-colors"
-          >← Back</button>
-          <h1 className="text-2xl font-bold">Quiz History</h1>
-          {isSyncing && (
-            <span className="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-lg">Syncing...</span>
-          )}
+      <div className="max-w-5xl mx-auto relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-3 tracking-tighter">Your History</h1>
+            <p className="text-slate-400 font-medium text-lg">Review past performances and analyze your growth.</p>
+          </div>
+          
+          <button 
+            onClick={() => { if(confirm("Delete ALL quiz history forever? This cannot be undone!")) clearHistory() }}
+            className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 px-5 py-3 rounded-xl font-bold text-sm transition-colors border border-red-500/20"
+          >
+            <ShieldAlert size={18} /> Delete All History
+          </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-gray-900 rounded-2xl p-4 mb-4 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400 w-16">Sort by</span>
-            <div className="flex gap-2">
-              {(["date", "score"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSortBy(s)}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    sortBy === s
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                  }`}
+        <div className="grid gap-6">
+          <AnimatePresence>
+            {history.map((attempt, i) => {
+              const date = new Date(attempt.date)
+              const percentage = Math.round((attempt.score / attempt.total) * 100)
+              const isGood = percentage >= 70
+              const isOk = percentage >= 40 && percentage < 70
+
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.05 }}
+                  key={attempt.id}
+                  className="bg-[#111827]/80 backdrop-blur-md border border-white/10 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-6 md:items-center justify-between group hover:bg-[#1a2035] transition-colors relative overflow-hidden"
                 >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400 w-16">Difficulty</span>
-            <div className="flex gap-2">
-              {(["All", "Easy", "Medium", "Hard"] as const).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setFilterDifficulty(d)}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    filterDifficulty === d
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-800 text-gray-400 hover:bg-gray-700"
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+                  <div className={`absolute left-0 top-0 bottom-0 w-2 ${isGood ? 'bg-emerald-500' : isOk ? 'bg-amber-500' : 'bg-red-500'}`} />
 
-        {/* Loading skeleton */}
-        {isSyncing && history.length === 0 && (
-          <div className="flex flex-col gap-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-gray-900 rounded-2xl p-4 animate-pulse">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="h-4 w-32 bg-gray-800 rounded mb-2" />
-                    <div className="h-3 w-20 bg-gray-800 rounded" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="px-3 py-1 bg-[#0a0f1e] border border-white/5 rounded-lg text-xs font-bold text-slate-300 uppercase tracking-wider">{attempt.topic}</span>
+                      <span className={`w-2 h-2 rounded-full ${attempt.difficulty === 'Easy'? 'bg-emerald-500' : attempt.difficulty === 'Medium'? 'bg-amber-500' : 'bg-red-500'}`} />
+                      <span className="text-sm font-bold text-slate-400">{attempt.difficulty}</span>
+                    </div>
+                    <h3 className="text-2xl font-black text-white mb-4 tracking-tight drop-shadow-sm">{percentage}% Score</h3>
+                    <div className="flex flex-wrap gap-6 text-sm font-medium text-slate-400">
+                      <div className="flex items-center gap-2"><Target className="w-4 h-4 text-blue-400" /> {attempt.score}/{attempt.total} Correct</div>
+                      <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-emerald-400" /> {attempt.timeTaken}s Total</div>
+                      <div className="flex items-center gap-2"><Calendar className="w-4 h-4 text-purple-400" /> {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}</div>
+                    </div>
                   </div>
-                  <div className="h-8 w-12 bg-gray-800 rounded" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
-        {/* Empty state */}
-        {!isSyncing && filtered.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-gray-500 text-lg mb-2">No quizzes yet</p>
-            <p className="text-gray-600 text-sm mb-6">Complete a quiz to see your history here</p>
-            <button
-              onClick={() => router.push("/")}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium transition-colors"
-            >
-              Generate a Quiz
-            </button>
-          </div>
-        )}
-
-        {/* History list */}
-        <div className="flex flex-col gap-3">
-          {filtered.map((attempt) => {
-            const percentage = Math.round((attempt.score / attempt.total) * 100)
-            const date = new Date(attempt.date).toLocaleDateString("en-US", {
-              month: "short", day: "numeric", year: "numeric",
-            })
-            const minutes = Math.floor(attempt.timeTaken / 60)
-            const seconds = attempt.timeTaken % 60
-
-            return (
-              <div key={attempt.id} className="bg-gray-900 rounded-2xl p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-white font-semibold capitalize">{attempt.topic}</h3>
-                    <p className="text-gray-500 text-xs mt-0.5">
-                      {attempt.username && (
-                        <span className="text-blue-400 mr-1">{attempt.username} •</span>
-                      )}
-                      {date}
-                    </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                    <button 
+                      onClick={() => { if(confirm("Delete this quiz?")) deleteAttempt(attempt.id) }} 
+                      className="w-full sm:w-auto p-4 rounded-xl border border-white/10 bg-[#0a0f1e] text-slate-400 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/10 transition-colors"
+                      title="Delete quiz"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                    <Link
+                      href={`/results/${attempt.id}`}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-shadow"
+                    >
+                      Detailed Review <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
-                  <span className={`text-2xl font-bold ${getScoreColor(attempt.score, attempt.total)}`}>
-                    {percentage}%
-                  </span>
-                </div>
-                <div className="flex gap-2 mb-3 flex-wrap">
-                  <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-lg">{attempt.difficulty}</span>
-                  <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-lg">
-                    {attempt.score}/{attempt.total} correct
-                  </span>
-                  <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-lg">
-                    {minutes}m {seconds}s
-                  </span>
-                  {attempt.earnedMarks !== undefined && (
-                    <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-lg">
-                      {attempt.earnedMarks}/{attempt.totalMarks} marks
-                    </span>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleRetake(attempt.id)}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-xl transition-colors"
-                  >Retake</button>
-                  <button
-                    onClick={() => router.push(`/results/${attempt.id}`)}
-                    className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium py-2 rounded-xl transition-colors"
-                  >View Results</button>
-                </div>
-              </div>
-            )
-          })}
+                </motion.div>
+              )
+            })}
+          </AnimatePresence>
         </div>
       </div>
     </main>
+  )
+}
+
+function HistoryIcon(props: any) {
+  return (
+    <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
   )
 }

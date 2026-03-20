@@ -11,15 +11,15 @@ export default function QuizPage() {
   
   if (completedAttempt) {
     return (
-      <main className="min-h-screen bg-gray-950 text-white">
-        <ResultsOverview attempt={completedAttempt} />
-      </main>
+      <div className="w-full">
+        <ResultsOverview attempt={completedAttempt} onRetake={() => setCompletedAttempt(null)} />
+      </div>
     )
   }
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white selection:bg-blue-500/30 font-sans">
+    <div className="w-full">
       <ActiveQuizRenderer setCompletedAttempt={setCompletedAttempt} />
-    </main>
+    </div>
   )
 }
