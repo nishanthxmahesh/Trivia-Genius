@@ -2,7 +2,7 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { AnimatedBackground } from "@/components/ui/AnimatedBackground"
-import { Play, Trophy, History, BarChart2 } from "lucide-react"
+import { Play, Trophy, History, BarChart2, ShieldCheck, Zap, Sparkles, Cpu, Globe, Database, Smartphone, Star } from "lucide-react"
 
 export default function LandingPage() {
   const container = {
@@ -12,6 +12,8 @@ export default function LandingPage() {
       transition: { staggerChildren: 0.1 }
     }
   }
+
+
 
   const item = {
     hidden: { opacity: 0, y: 20 },
@@ -39,7 +41,7 @@ export default function LandingPage() {
             AI-Powered <br className="md:hidden" />Quiz Application
           </h1>
           <p className="text-lg md:text-xl text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
-            Developed by <span className="text-white font-bold">M. Nishanth</span> to demonstrate expertise in Next.js 14, TypeScript, complex state management, and modern UI engineering.
+            Developed by <span className="text-white font-bold">M. Nishanth</span> to demonstrate expertise in Next.js 16, TypeScript, complex state management, and modern UI engineering.
           </p>
         </motion.div>
 
@@ -62,18 +64,96 @@ export default function LandingPage() {
           ))}
         </motion.div>
 
-        <motion.div variants={item} className="mt-12 flex flex-col items-center gap-4 bg-[#111827]/50 border border-white/5 p-8 rounded-3xl text-sm text-slate-400 text-left max-w-4xl font-medium shadow-inner">
-          <h4 className="text-white font-bold text-base mb-2 self-start tracking-wide uppercase">🚀 Assignment Features Successfully Implemented:</h4>
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3 w-full list-disc pl-5 marker:text-blue-500">
-            <li>Dynamic AI Generation via Next.js Proxy Routes</li>
-            <li>Advanced Zustand State Management & Persistence</li>
-            <li>Complex Fractional Grading (Partial Credits & Penalties)</li>
-            <li>Supabase Data Persistence (Global Leaderboards & History)</li>
-            <li>4 Unique Formats: MCQ, True/False, Blank, Multi-Select</li>
-            <li>Deep Analytics: Difficulty, Type Accuracy & Trend Charts</li>
-            <li>Interactive Post-Quiz AI Retutor & Hint Penalties</li>
-            <li>100% Scalable Mobile-First Responsive UI</li>
-          </ul>
+        <motion.div variants={item} className="w-full space-y-8">
+          <div className="flex flex-col items-center gap-4">
+            <h4 className="text-white/60 font-bold text-xs uppercase tracking-[0.3em]">Built with Modern Ecosystem</h4>
+            <div className="flex flex-wrap justify-center gap-3">
+              {[
+                { name: "Next.js 16", color: "bg-white/5 border-white/10 text-white" },
+                { name: "TypeScript", color: "bg-blue-500/10 border-blue-500/20 text-blue-400" },
+                { name: "Tailwind CSS", color: "bg-cyan-500/10 border-cyan-500/20 text-cyan-400" },
+                { name: "Supabase", color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" },
+                { name: "Zustand", color: "bg-amber-500/10 border-amber-500/20 text-amber-400" },
+                { name: "Framer Motion", color: "bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-400" },
+                { name: "Groq AI", color: "bg-orange-500/10 border-orange-500/20 text-orange-400" },
+              ].map((tech) => (
+                <span key={tech.name} className={`px-4 py-2 rounded-xl border text-xs font-black tracking-tight ${tech.color}`}>
+                  {tech.name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+            <div className="bg-[#111827]/40 border border-white/5 p-6 rounded-3xl group hover:border-blue-500/30 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 transition-transform">
+                <Zap size={20} />
+              </div>
+              <h4 className="text-white font-bold mb-2">Smart Generation</h4>
+              <p className="text-sm text-slate-400 leading-relaxed font-medium">Gen AI models generate unique, challenging, and factually accurate questions instantly.</p>
+            </div>
+            
+            <div className="bg-[#111827]/40 border border-white/5 p-6 rounded-3xl group hover:border-emerald-500/30 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4 group-hover:scale-110 transition-transform">
+                <Database size={20} />
+              </div>
+              <h4 className="text-white font-bold mb-2">Cloud Persistence</h4>
+              <p className="text-sm text-slate-400 leading-relaxed font-medium">Supabase integration for secure, real-time data storage, global leaderboards, and persistent history.</p>
+            </div>
+
+            <div className="bg-[#111827]/40 border border-white/5 p-6 rounded-3xl group hover:border-purple-500/30 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 mb-4 group-hover:scale-110 transition-transform">
+                <Smartphone size={20} />
+              </div>
+              <h4 className="text-white font-bold mb-2">PWA Ready</h4>
+              <p className="text-sm text-slate-400 leading-relaxed font-medium">Installable web experience with offline support, manifests, and optimized service workers for mobile.</p>
+            </div>
+          </div>
+
+          <div className="bg-[#111827]/60 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-[2.5rem] text-left shadow-2xl relative overflow-hidden group">
+            <h4 className="text-white font-black text-2xl mb-8 flex items-center gap-3 tracking-tight">
+              <ShieldCheck className="text-blue-500" /> 
+              Assignment Implementation Success
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10 w-full">
+              <div className="space-y-4">
+                <h5 className="text-blue-400 font-black text-xs uppercase tracking-widest">Mandatory Features</h5>
+                <ul className="space-y-3">
+                  {[
+                    "AI-Powered Dynamic Quiz Generation",
+                    "Zustand State Persistence & Auto-Save",
+                    "Comprehensive Results & Growth Analytics",
+                    "Supabase Cloud Persistence (History/Leaderboard)",
+                    "100% Responsive & Mobile-First Engineering",
+                    "Intelligent Error & Rate-Limit Handling"
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-3 text-slate-300 text-sm font-medium">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /> {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="space-y-4">
+                <h5 className="text-emerald-400 font-black text-xs uppercase tracking-widest">Bonus Features (Advanced)</h5>
+                <ul className="space-y-3">
+                  {[
+                    "AI Retutor Interface & Hint Penalties",
+                    "4 Question Formats (MCQ, T/F, Fill, Multi)",
+                    "Performance Charts & Category Analytics",
+                    "PDF Export Functionality (Results)",
+                    "PWA & Offline Installation Support",
+                    "Timed Global Challenges & Podium System"
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-3 text-slate-300 text-sm font-medium">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </motion.div>
     </main>

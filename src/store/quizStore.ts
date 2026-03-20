@@ -240,19 +240,16 @@ export const useQuizStore = create<QuizStore>()(
         } catch (err) { console.error("Failed to delete local entry", err) }
       },
       clearHistory: async () => {
-        const state = get()
         set({ history: [] })
         try {
-          const ids = state.history.map(a => a.id)
-          await supabase.from("quiz_attempts").delete().in("id", ids)
-          await supabase.from("leaderboard").delete().in("id", ids)
-        } catch (err) { console.error("Failed to clear local entries", err) }
+          await supabase.from("quiz_attempts").delete().neq("id", "00000000-0000-0000-0000-000000000000")
+          await supabase.from("leaderboard").delete().neq("id", "00000000-0000-0000-0000-000000000000")
+        } catch (err) { console.error("Failed to clear Supabase entries", err) }
       },
     }),
     {
       name: "quiz-storage",
       partialize: (state) => ({
-        history: state.history,
         questions: state.questions,
         currentIndex: state.currentIndex,
         userAnswers: state.userAnswers,

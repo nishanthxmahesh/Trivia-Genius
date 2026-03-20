@@ -92,29 +92,31 @@ export function ActiveQuizRenderer({ setCompletedAttempt }: { setCompletedAttemp
       }
     })
 
+    const finalState = useQuizStore.getState()
+
     const attempt: QuizAttempt = {
       id: Date.now().toString(),
-      topic: state.config.topic,
-      difficulty: state.config.difficulty,
+      topic: finalState.config!.topic,
+      difficulty: finalState.config!.difficulty,
       score: correctCount,
-      total: state.questions.length,
-      totalMarks: state.config.totalMarks,
+      total: finalState.questions.length,
+      totalMarks: finalState.config!.totalMarks,
       earnedMarks: Math.round(earnedMarks * 10) / 10,
-      timeTaken: state.startTime ? Math.floor((Date.now() - state.startTime) / 1000) : 0,
+      timeTaken: finalState.startTime ? Math.floor((Date.now() - finalState.startTime) / 1000) : 0,
       date: new Date().toISOString(),
-      questions: state.questions,
-      userAnswers: state.userAnswers,
-      questionTimings: state.questionTimings,
-      questionHints: state.questionHints,
-      timerEnabled: state.config.timerEnabled,
-      timerSeconds: state.config.timerSeconds,
-      hintsEnabled: state.config.hintsEnabled,
-      aiChatEnabled: state.config.aiChatEnabled,
-      username: state.config.username,
-      questionTypes: state.config.questionTypes,
-      requireAllAnswers: state.config.requireAllAnswers,
-      minTimeLimit: state.config.minTimeLimit,
-      negativeMarking: state.config.negativeMarking,
+      questions: finalState.questions,
+      userAnswers: finalState.userAnswers,
+      questionTimings: finalState.questionTimings,
+      questionHints: finalState.questionHints,
+      timerEnabled: finalState.config!.timerEnabled,
+      timerSeconds: finalState.config!.timerSeconds,
+      hintsEnabled: finalState.config!.hintsEnabled,
+      aiChatEnabled: finalState.config!.aiChatEnabled,
+      username: finalState.config!.username,
+      questionTypes: finalState.config!.questionTypes,
+      requireAllAnswers: finalState.config!.requireAllAnswers,
+      minTimeLimit: finalState.config!.minTimeLimit,
+      negativeMarking: finalState.config!.negativeMarking,
     }
 
     saveAttempt(attempt)

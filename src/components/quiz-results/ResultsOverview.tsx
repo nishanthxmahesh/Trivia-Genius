@@ -10,6 +10,9 @@ import { motion } from "framer-motion"
 import { BrainCircuit, Clock, Target, Calendar } from "lucide-react"
 
 import { useRouter } from "next/navigation"
+import { Download, FileText, Share2 } from "lucide-react"
+import jsPDF from "jspdf"
+import { toPng } from "html-to-image"
 
 export function ResultsOverview({ attempt, onRetake }: { attempt: QuizAttempt, onRetake?: () => void }): JSX.Element {
   const router = useRouter()
@@ -20,6 +23,7 @@ export function ResultsOverview({ attempt, onRetake }: { attempt: QuizAttempt, o
   const [reviewCount, setReviewCount] = useState(10)
   const [weakAreas, setWeakAreas] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
+  const [exporting, setExporting] = useState(false)
   
   useEffect(() => {
     if (percentage >= 80) {
@@ -125,21 +129,77 @@ export function ResultsOverview({ attempt, onRetake }: { attempt: QuizAttempt, o
     }
   }
 
+  const exportToPDF = async () => {
+    setExporting(true)
+    const element = document.getElementById("quiz-results-content")
+    if (!element) return
+
+    try {
+      // Temporarily set height/width to scrollHeight to ensure full capture
+      const originalHeight = element.style.height
+      const originalWidth = element.style.width
+      const { scrollHeight, scrollWidth } = element
+      
+      const dataUrl = await toPng(element, {
+        quality: 1,
+        backgroundColor: "#0a0f1e",
+        width: scrollWidth,
+        height: scrollHeight,
+        style: {
+          height: scrollHeight + "px",
+          width: scrollWidth + "px"
+        },
+        filter: (node: any) => {
+          if (node.classList) return !node.classList.contains("no-print")
+          return true
+        }
+      })
+      
+      const imgProps = new Image()
+      imgProps.src = dataUrl
+      await new Promise(resolve => imgProps.onload = resolve)
+
+      const pdf = new jsPDF("p", "mm", [scrollWidth * 0.264583, scrollHeight * 0.264583]) // 1px = 0.264583mm
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      
+      pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight)
+      pdf.save(`quiz-result-${attempt.topic}-${new Date().toLocaleDateString()}.pdf`)
+    } catch (error) {
+      console.error("PDF Export failed:", error)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, type: "spring" }}
       className="max-w-4xl mx-auto p-4 py-8 relative z-10"
+      id="quiz-results-content"
     >
       <div className="bg-[#111827] border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden text-center mb-8 flex flex-col items-center">
         
+        <div className="absolute top-8 right-8 flex gap-2 no-print">
+          <Button 
+            onClick={exportToPDF} 
+            disabled={exporting}
+            className="bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold h-10 px-4 rounded-xl flex items-center gap-2"
+          >
+            {exporting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin rounded-full" /> : <Download size={16} />}
+            {exporting ? "Exporting..." : "Export PDF"}
+          </Button>
+        </div>
+
         <h2 className="text-3xl font-black text-white mb-2 tracking-tight">Quiz Complete!</h2>
         <p className="text-slate-400 font-medium mb-10 max-w-sm">You have finished the quiz. Let's see how you performed.</p>
 
         <div className="relative w-48 h-48 mb-6">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none" className="text-[#1a2035]" />
-            <motion.circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="8" fill="none"
-              className={percentage >= 80 ? 'text-emerald-500' : percentage >= 50 ? 'text-blue-500' : 'text-red-500'}
+            <circle cx="50" cy="50" r="40" stroke="#1a2035" strokeWidth="8" fill="none" />
+            <motion.circle cx="50" cy="50" r="40" 
+              stroke={percentage >= 80 ? '#10b981' : percentage >= 50 ? '#3b82f6' : '#ef4444'} 
+              strokeWidth="8" fill="none"
               strokeDasharray={2 * Math.PI * 40}
               initial={{ strokeDashoffset: 2 * Math.PI * 40 }}
               animate={{ strokeDashoffset: (2 * Math.PI * 40) * (1 - percentage / 100) }}

@@ -145,9 +145,14 @@ export function QuestionCard({
 
       {isFillInBlank ? (
         <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              {question.text.toLowerCase().includes("(numerical)") ? "Numerical Answer" : "Text Answer"}
+            </span>
+          </div>
           <input
-            type="text"
-            placeholder="Type your precise answer here..."
+            type={question.text.toLowerCase().includes("(numerical)") ? "number" : "text"}
+            placeholder={question.text.toLowerCase().includes("(numerical)") ? "Enter number..." : "Type your precise answer here..."}
             value={fillAnswer}
             onChange={(e) => {
               setFillAnswer(e.target.value)

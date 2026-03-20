@@ -9,14 +9,19 @@ import { useEffect, useState } from "react"
 export default function ResultsPage() {
   const { id } = useParams()
   const router = useRouter()
-  const history = useQuizStore((state) => state.history)
+  const { history, loadHistory, isSyncing } = useQuizStore()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-  }, [])
+    loadHistory()
+  }, [loadHistory])
 
-  if (!mounted) return null
+  if (!mounted || isSyncing) return (
+    <div className="flex items-center justify-center min-h-screen text-slate-300">
+      <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+    </div>
+  )
 
   const attempt = history.find((a) => a.id === id)
 

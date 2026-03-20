@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
-import { Trophy, Search, Star, Medal, ArrowUp } from "lucide-react"
+import { Trophy, Search, Star, Medal, ArrowUp, Clock } from "lucide-react"
 
 export default function LeaderboardPage() {
   const [data, setData] = useState<any[]>([])
@@ -100,11 +100,17 @@ export default function LeaderboardPage() {
                   className="w-full max-w-[140px] flex flex-col items-center justify-end relative"
                 >
                   <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2 + 0.1 * place }} className="text-4xl mb-3 drop-shadow-xl z-20">{medal}</motion.div>
-                  <div className={`w-full h-full bg-gradient-to-t ${color} rounded-t-3xl relative flex flex-col items-center justify-start pt-6 border border-white/20 z-10 overflow-hidden`}>
+                  <div className={`w-full h-full bg-gradient-to-t ${color} rounded-t-3xl relative flex flex-col items-center justify-center p-4 border border-white/20 z-10 overflow-hidden`}>
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#fff1_1px,transparent_1px),linear-gradient(to_bottom,#fff1_1px,transparent_1px)] bg-[size:10px_10px] mix-blend-overlay"></div>
-                    <span className="text-3xl font-black text-white/90 drop-shadow-md">{place}</span>
-                    <span className="font-bold text-white text-sm mt-4 truncate w-[90%] text-center uppercase tracking-widest bg-black/20 px-2 py-1 rounded-md">{entry.username}</span>
-                    <span className="font-mono font-black text-white text-xl mt-2 drop-shadow-lg">{entry.percentage}%</span>
+                    <span className="text-2xl font-black text-white/90 drop-shadow-md mb-1">{place}</span>
+                    <span className="font-bold text-white text-[10px] md:text-xs text-center uppercase tracking-widest bg-black/20 px-2 py-1 rounded-md leading-tight break-all max-w-[120px]">{entry.username}</span>
+                    <span className="font-mono font-black text-white text-lg md:text-xl mt-1 drop-shadow-lg">{entry.percentage}%</span>
+                    <div className="mt-2 flex flex-col items-center gap-0.5 opacity-90">
+                      <span className="text-[10px] font-black text-white/80 uppercase tracking-widest truncate max-w-[110px]">{entry.topic}</span>
+                      <span className="text-[10px] font-mono font-bold text-white/70 flex items-center gap-1">
+                        <Clock size={10} /> {entry.time_taken}s
+                      </span>
+                    </div>
                   </div>
                 </motion.div>
               )
@@ -123,13 +129,15 @@ export default function LeaderboardPage() {
 
           <div className="divide-y divide-white/5">
             <AnimatePresence>
-              {filteredData.slice(3).map((entry, i) => (
+              {filteredData.map((entry, i) => (
                 <motion.div 
                   initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ delay: i * 0.05 }}
                   key={entry.id}
-                  className="grid grid-cols-12 gap-4 p-4 md:px-8 items-center hover:bg-[#1a2035]/50 transition-colors group"
+                  className={`grid grid-cols-12 gap-4 p-4 md:px-8 items-center hover:bg-[#1a2035]/50 transition-colors group ${i < 3 ? 'bg-blue-600/5' : ''}`}
                 >
-                  <div className="col-span-1 text-center font-black text-slate-600 group-hover:text-blue-400 transition-colors">{i + 4}</div>
+                  <div className="col-span-1 text-center font-black text-slate-600 group-hover:text-blue-400 transition-colors">
+                    {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                  </div>
                   <div className="col-span-4 md:col-span-3 font-bold text-white truncate text-sm md:text-base">{entry.username}</div>
                   <div className="col-span-4 md:col-span-4 hidden md:flex items-center gap-2">
                     <span className="px-2 py-1 bg-[#0a0f1e] rounded-md text-xs font-bold text-slate-400 border border-white/5 truncate max-w-xs uppercase tracking-wider">{entry.topic}</span>
